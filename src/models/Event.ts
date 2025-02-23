@@ -1,0 +1,72 @@
+import {model, Schema,Types} from "mongoose";
+export const EventSchema = new Schema({
+    name:{
+        type:String,
+        required:true
+    },
+    managers:[{
+        type:Types.ObjectId,
+        ref:"User"
+    }],
+    timings:{
+        type:{
+            start:Date,
+            end:Date
+        },
+        required:true,
+    },
+    status:{
+        type:String,
+        enum:["Upcoming", "Live", "Hold","Ongoing", "Archived"],
+        required:true
+    },
+    attendees:[{
+        type:Types.ObjectId,
+        ref:"User"
+    }],
+    description:{
+        type:{
+            description:String,
+            guidelines:String
+        },
+    },
+    venue:{
+        type:{
+            name:String,
+            address:String,
+        },
+    },
+    visibility:{
+        type:String,
+        enum:["Public", "Private"],
+        required:true,
+        default:"Public"
+    },
+    poster:{
+        type:String,
+        required:true
+    },
+    capacity:{
+        type:Number,
+    },
+    contactDetails:[{
+        type:{
+            name:String,
+            phone:String,
+            email:String(10)
+        }
+    }],
+    hosts:[{
+        type:Types.ObjectId,
+        ref:"User"
+    }],
+    checkedIn:[{
+        type:Types.ObjectId,
+        ref:"User"
+    }],
+    feedbackURL:{
+        type:String,
+    }
+})
+
+export default model("Event", EventSchema);

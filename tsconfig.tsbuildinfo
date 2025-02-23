@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/configs/db.ts","./src/configs/default.ts","./src/models/event.ts","./src/models/otp.ts","./src/models/space.ts","./src/models/user.ts","./src/routes/v1/auth.ts","./src/types/authtypes.ts","./src/types/usertypes.ts","./src/utils/dbutils.ts","./src/utils/nodemailerutil.ts"],"version":"5.7.3"}
