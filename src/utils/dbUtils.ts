@@ -1,5 +1,6 @@
 import User from '../models/User'
 import Otp from '../models/Otp'
+import Action from '../models/Action'
 import { UserType } from '../types/UserTypes'
 export const getUserById = async (id: string) => {
   try {
@@ -69,7 +70,7 @@ export const createOTP = async (
   try {
     const newOTP = new Otp({
       username: username,
-      fullname:fullname,
+      fullname: fullname,
       email: email,
       password: password,
       profilePhoto: profilePhoto,
@@ -87,8 +88,8 @@ export const createOTP = async (
 export const getOTP = async (email: string, otp: string) => {
   try {
     const existingOTP = await Otp.findOne({
-        email: email,
-        otp: otp
+      email: email,
+      otp: otp
     })
     console.log('existingOTP: ', existingOTP);
     return existingOTP
@@ -99,11 +100,93 @@ export const getOTP = async (email: string, otp: string) => {
 }
 
 export const deleteOTP = async (email: string) => {
-    try {
-        await Otp.deleteOne({
-            email: email
-        })
-    } catch (err) {
-        console.error(err)
-    }
+  try {
+    await Otp.deleteOne({
+      email: email
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const addAction = async (username: string, action: string) => {
+  try {
+    const newAction = new Action({
+      username: username,
+      action: action
+    })
+    await newAction.save()
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const updateUserNotification = async (username: string, notification: boolean) => {
+  try {
+    await User.updateOne({
+      username: username
+    }, {
+      $set: {
+        notificationPreference: notification
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const updateUserEmail = async (username: string, email: string) => {
+  try {
+    await User.updateOne({
+      username: username
+    }, {
+      $set: {
+        email: email
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const updateUserFullname = async (username: string, fullname: string) => {
+  try {
+    await User.updateOne({
+      username: username
+    }, {
+      $set: {
+        fullname: fullname
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const updateUserProfilePhoto = async (username: string, profilePhoto: string) => {
+  try {
+    await User.updateOne({
+      username: username
+    }, {
+      $set: {
+        profilePhoto: profilePhoto
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export const updateUserPassword = async (username: string, password: string) => {
+  try {
+    await User.updateOne({
+      username: username
+    }, {
+      $set: {
+        password: password
+      }
+    })
+  } catch (err) {
+    console.error(err)
+  }
 }

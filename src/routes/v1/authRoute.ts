@@ -205,12 +205,17 @@ AuthRouter.post('/login', async (req, res) => {
         expiresIn: '1h'
       }
     )
-    const { password: _, ...userWithoutPassword } = user
     res.status(200).send({
       payload: {
         message: 'Login Successful',
         token: token,
-        user: userWithoutPassword
+        user: {
+          username: user.username,
+          email: user.email,
+          fullname: user.fullname,
+          profilePhoto: user.profilePhoto,
+          gender:user.gender
+        }
       },
       error: false
     })
