@@ -11,7 +11,6 @@ declare module "express-serve-static-core" {
     }
 }
 
-
 const verifyToken = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const token = req.headers.authorization?.split(" ")[1];

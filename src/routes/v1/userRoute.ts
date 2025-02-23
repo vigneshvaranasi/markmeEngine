@@ -4,7 +4,7 @@ import verifyToken from "../../middleware/userMiddleware";
 
 
 const UserRouter = Router();
-import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword } from "../../utils/dbUtils";
+import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword, getSpaceById } from "../../utils/dbUtils";
 
 UserRouter.get('/', (req, res) => {
     res.send('User Route');
@@ -43,40 +43,6 @@ UserRouter.put('/set/notification', async (req, res) => {
         })
     }
 })
-
-
-UserRouter.put('/set/updateEmail', async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (email === undefined || typeof email !== 'string') {
-            res.status(400).send({
-                payload: {
-                    message: 'Please Provide Email'
-                },
-                error: true
-            })
-            return
-        }
-        const username = req.user?.username as string;
-        await updateUserEmail(username, email);
-        await addAction(username, `Email Updated to ${email}`);
-        // TODO : Update in Sevice
-        res.send({
-            payload: {
-                message: `Email Updated to ${email}`
-            },
-            error: false
-        })
-    } catch (err) {
-        console.error(err);
-        res.status(500).send({
-            payload: {
-                message: "Internal Server Error: " + err
-            },
-            error: true
-        })
-    }
-});
 
 UserRouter.put('/set/updateName', async (req, res) => {
     try {
@@ -164,6 +130,34 @@ UserRouter.put('/set/updatePassword', async (req, res) => {
             error: false
         })
     } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+
+// Follow Space
+UserRouter.put('/space/follow',async (req,res)=>{
+    try{
+        const {spaceId} =  req.body;
+        if(getSpaceById(spaceId) === undefined){
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        else{
+            
+        }
+    }
+    catch(err){
         console.error(err);
         res.status(500).send({
             payload: {

@@ -1,6 +1,7 @@
 import User from '../models/User'
 import Otp from '../models/Otp'
 import Action from '../models/Action'
+import Space from '../models/Space'
 import { UserType } from '../types/UserTypes'
 export const getUserById = async (id: string) => {
   try {
@@ -186,6 +187,66 @@ export const updateUserPassword = async (username: string, password: string) => 
         password: password
       }
     })
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+
+export const createSpace = async (username: string, name: string, icon: string, admin: string[]) => {
+  try {
+    const admins = await User.find({
+      username: {
+        $in: [...admin, username]
+      }
+    });
+    const space = new Space({
+      name: name,
+      icon: icon,
+      admins: admins.map(admin => admin._id)
+    });
+    await space.save();
+    return space;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
+export async function getSpaceById(spaceId: string) {
+  try {
+    const space = await Space.findOne({
+      _id: spaceId
+    })
+    if (space) {
+      return space;
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+export async function followSpace(username: string, spaceId: string) {
+  try {
+    const user = await getUserByUsername(username);
+    if (user) {
+      await Space.updateOne({
+        _id: spaceId,
+      }, {
+        $push: {
+          followers: user._id
+        }
+      })
+      await User.updateOne({
+        username: username,
+      }, {
+        $push: {
+          followingSpaces: spaceId
+        }
+      }
+      )
+    }
+
   } catch (err) {
     console.error(err)
   }
