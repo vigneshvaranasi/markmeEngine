@@ -4,7 +4,7 @@ import verifyToken from "../../middleware/userMiddleware";
 
 
 const UserRouter = Router();
-import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword, getSpaceById } from "../../utils/dbUtils";
+import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword, getSpaceById, followSpace } from "../../utils/dbUtils";
 
 UserRouter.get('/', (req, res) => {
     res.send('User Route');
@@ -143,7 +143,7 @@ UserRouter.put('/set/updatePassword', async (req, res) => {
 // Follow Space
 UserRouter.put('/space/follow',async (req,res)=>{
     try{
-        const {spaceId} =  req.body;
+        const {spaceId,username} =  req.body;
         if(getSpaceById(spaceId) === undefined){
             res.status(400).send({
                 payload: {
@@ -154,7 +154,15 @@ UserRouter.put('/space/follow',async (req,res)=>{
             return
         }
         else{
-            
+            await followSpace(username,spaceId);
+            // TODO : Update in Service
+            res.send({
+                payload: {
+                    message: `Space Followed`
+                },
+                error: false
+            })
+                        
         }
     }
     catch(err){

@@ -1,6 +1,5 @@
 import { Router } from "express";
-import Space from "../../models/Space";
-import { createSpace, followSpace } from "../../utils/dbUtils";
+import { createSpace,deleteSpaceById,updateSpaceDetails } from "../../utils/dbUtils";
 import verifyToken from "../../middleware/userMiddleware";
 const SpaceRouter = Router();
 
@@ -48,7 +47,47 @@ SpaceRouter.post('/create', async(req,res)=>{
     }
 })
 
+// Update Space Details
+SpaceRouter.put('/update', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const {spaceId,spaceDetails} = req.body;        
+        await updateSpaceDetails(username,spaceId,spaceDetails);
+        res.send({
+            payload: { 
+                message: "Space Details Updated"
+            }
+        });
+    } catch (err) {
+      console.error(err);
+      res.status(500).send({
+        payload: { message: "Internal Server Error" },
+        error: true,
+      });
+    }
+});
 
-
+// Delete Space
+SpaceRouter.delete('/delete', async (req, res) => {
+    try {
+        const {spaceId} = req.body;
+        const username = req.user?.username as string;
+        await deleteSpaceById(spaceId,username);
+        res.send({
+            payload: { 
+                message: "Space Deleted Successfully" 
+            },
+            error: false,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: { 
+                message: "Internal Server Error" 
+            },
+            error: true,
+        });
+    }
+});
 
 export default SpaceRouter;
