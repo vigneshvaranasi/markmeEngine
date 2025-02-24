@@ -44,7 +44,7 @@ export async function getSpaceById(spaceId: string) {
   try {
     const space = await Space.findOne({
       _id: spaceId
-    })
+    }).populate('admins').populate('followers');
     if (space) {
       return space;
     }
@@ -213,5 +213,24 @@ export async function deleteSpaceById(spaceId: string, username: string) {
 
   } catch (err) {
     console.error(err);
+  }
+}
+
+export const isUserAdminofSpace = async(username: string, spaceId:string)=>{
+  try{
+      const space = await getSpaceById(spaceId);
+      if(!space){
+          return false;
+      }
+      let isAdmin = false;
+      space.admins.forEach((admin:any)=>{
+          if(admin.username.toString() === username){
+              isAdmin = true;
+          }
+      });
+      return isAdmin;
+  }catch(err){
+      console.error(err);
+      return false;
   }
 }
