@@ -4,16 +4,10 @@ import jwt from 'jsonwebtoken'
 import { sendOTP } from '../../utils/nodemailerUtil'
 import { Register } from '../../types/AuthTypes'
 import ENV from '../../configs/default'
-import {
-  createOTP,
-  getUserByEmail,
-  getOTP,
-  createUser,
-  getUserByUsername,
-  deleteOTP
-} from '../../utils/dbUtils'
+
 import { generateOTP } from '../../utils/authUtils'
 import UserType from '../../types/UserTypes'
+import { createOTP, createUser, deleteOTP, getOTP, getUserByEmail, getUserByUsername } from '../../utils/dbUtils/userDBUtils'
 
 const AuthRouter = Router()
 
@@ -40,8 +34,9 @@ AuthRouter.post('/register', async (req, res) => {
     }
 
     // Checking if User Already Exists
-    const user = await getUserByEmail(RegisterData.email)
-    if (user) {
+    const userWithEmail = await getUserByEmail(RegisterData.email);
+    const userWithUsername = await getUserByUsername(RegisterData.username);
+    if (userWithEmail||userWithUsername) {
       res.status(400).send({
         payload: {
           message: 'User Already Exists'
@@ -202,7 +197,7 @@ AuthRouter.post('/login', async (req, res) => {
       },
       ENV.JWT_SECRET!,
       {
-        expiresIn: '1h'
+        expiresIn: '30d'
       }
     )
     res.status(200).send({
@@ -214,7 +209,7 @@ AuthRouter.post('/login', async (req, res) => {
           email: user.email,
           fullname: user.fullname,
           profilePhoto: user.profilePhoto,
-          gender:user.gender
+          gender: user.gender
         }
       },
       error: false

@@ -1,21 +1,22 @@
 import { Router } from "express";
-import { createSpace,deleteSpaceById,updateSpaceDetails } from "../../utils/dbUtils";
+import { createSpace, deleteSpaceById, updateSpaceDetails } from "../../utils/dbUtils/spaceDBUtils";
 import verifyToken from "../../middleware/userMiddleware";
+import { addAction } from "../../utils/dbUtils/actionDBUtils";
 const SpaceRouter = Router();
 
 SpaceRouter.get("/", (req, res) => {
-  res.send("Space Route");
+    res.send("Space Route");
 });
 
 SpaceRouter.use(verifyToken);
 
 // Create Space
-SpaceRouter.post('/create', async(req,res)=>{
-    try{
-        const {name, icon, admin}: {name: string, icon: string, admin: string[]} = req.body;
-        if(name === undefined || icon === undefined || admin === undefined){
+SpaceRouter.post('/create', async (req, res) => {
+    try {
+        const { name, icon, admin }: { name: string, icon: string, admin: string[] } = req.body;
+        if (name === undefined || icon === undefined || admin === undefined) {
             res.status(400).send({
-                payload:{
+                payload: {
                     message: "Please Provide All Required Fields"
                 },
                 error: true
@@ -23,24 +24,28 @@ SpaceRouter.post('/create', async(req,res)=>{
             return;
         }
         const username = req.user?.username as string;
-        const space = await createSpace(username,name, icon, admin);
+        const space = await createSpace(username, name, icon, admin);
+        if (!space) {
+            throw new Error("Space Creation Failed")
+        }
+        await addAction(username, `Space Created: ${name}`);
         res.send({
-            payload:{
+            payload: {
                 message: "Space Created Successfully",
                 space: {
                     name: space?.name,
                     icon: space?.icon,
                     admins: space?.admins,
                     followers: space?.followers,
-
                 }
-            }
+            },
+            error: false
         })
-    }catch(err){
+    } catch (err) {
         console.error(err);
         res.status(500).send({
-            payload:{
-                message: "Internal Server Error: "+err
+            payload: {
+                message: "Internal Server Error: " + err
             },
             error: true
         })
@@ -51,39 +56,82 @@ SpaceRouter.post('/create', async(req,res)=>{
 SpaceRouter.put('/update', async (req, res) => {
     try {
         const username = req.user?.username as string;
-        const {spaceId,spaceDetails} = req.body;        
-        await updateSpaceDetails(username,spaceId,spaceDetails);
-        res.send({
-            payload: { 
-                message: "Space Details Updated"
-            }
-        });
+        const { spaceId, spaceDetails } = req.body;
+        if (spaceId === undefined) {
+            res.status(400).send({
+                payload: {
+                    message: "Please Provide Space Id"
+                },
+                error: true
+            });
+            return;
+        }
+        if (spaceDetails === undefined) {
+            res.status(400).send({
+                payload: {
+                    message: "Please Provide Space Details"
+                },
+                error: true
+            });
+            return;
+        }
+
+        const updatedSpace=await updateSpaceDetails(username, spaceId, spaceDetails);
+        if(updatedSpace){
+            await addAction(username, `Update Space Details ${spaceDetails.name} of id: ${spaceDetails.id}`);
+            res.send({
+                payload: {
+                    message: "Space Details Updated"
+                },
+                error: false
+            });
+            return;
+        }else{
+            res.status(400).send({
+                payload: {
+                    message: "Update not Possible right now"
+                },
+                error: true
+            });
+            return;
+        }
     } catch (err) {
-      console.error(err);
-      res.status(500).send({
-        payload: { message: "Internal Server Error" },
-        error: true,
-      });
+        console.error(err);
+        res.status(500).send({
+            payload: { message: "Internal Server Error" },
+            error: true,
+        });
     }
 });
 
 // Delete Space
 SpaceRouter.delete('/delete', async (req, res) => {
     try {
-        const {spaceId} = req.body;
+        const { spaceId } = req.body;
         const username = req.user?.username as string;
-        await deleteSpaceById(spaceId,username);
+        if (spaceId === undefined) {
+            res.status(400).send({
+                payload: {
+                    message: "Please Provide Space Id"
+                },
+                error: true
+            });
+            return;
+        }
+
+        await deleteSpaceById(spaceId, username);
+        await addAction(username, `Deleted Space of id: ${spaceId}`);
         res.send({
-            payload: { 
-                message: "Space Deleted Successfully" 
+            payload: {
+                message: "Space Deleted Successfully"
             },
             error: false,
         });
     } catch (err) {
         console.error(err);
         res.status(500).send({
-            payload: { 
-                message: "Internal Server Error" 
+            payload: {
+                message: "Internal Server Error"
             },
             error: true,
         });

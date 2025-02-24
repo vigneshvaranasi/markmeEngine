@@ -1,7 +1,7 @@
 import ENV from "../configs/default";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { getUserByUsername } from "../utils/dbUtils";
+import { getUserByUsername } from "../utils/dbUtils/userDBUtils";
 declare module "express-serve-static-core" {
     interface Request {
         user?: {

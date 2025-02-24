@@ -1,10 +1,14 @@
 import express, { Router, Request } from "express";
 import ENV from './../../configs/default';
 import verifyToken from "../../middleware/userMiddleware";
+import { updateUserFullname, updateUserPassword, updateUserProfilePhoto } from "../../utils/dbUtils/userDBUtils";
+import { updateUserNotification } from "../../utils/dbUtils/userDBUtils";
+import { addAction } from "../../utils/dbUtils/actionDBUtils";
+import { getSpaceById, unFollowSpace } from "../../utils/dbUtils/spaceDBUtils";
+import { followSpace } from "../../utils/dbUtils/spaceDBUtils";
 
 
 const UserRouter = Router();
-import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword, getSpaceById, followSpace } from "../../utils/dbUtils";
 
 UserRouter.get('/', (req, res) => {
     res.send('User Route');
@@ -141,10 +145,21 @@ UserRouter.put('/set/updatePassword', async (req, res) => {
 })
 
 // Follow Space
-UserRouter.put('/space/follow',async (req,res)=>{
-    try{
-        const {spaceId,username} =  req.body;
-        if(getSpaceById(spaceId) === undefined){
+UserRouter.put('/space/follow', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const { spaceId } = req.body;
+        if (spaceId === undefined || typeof spaceId !== 'string') {
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        const space = await getSpaceById(spaceId);
+        if (!space) {
             res.status(400).send({
                 payload: {
                     message: 'Invalid Space ID'
@@ -153,19 +168,65 @@ UserRouter.put('/space/follow',async (req,res)=>{
             })
             return
         }
-        else{
-            await followSpace(username,spaceId);
-            // TODO : Update in Service
+        else {
+            await followSpace(username, spaceId);
+            await addAction(username, `Followed Space ${space.name}`);
             res.send({
                 payload: {
-                    message: `Space Followed`
+                    message: `Followed Space ${space.name}`
                 },
                 error: false
             })
-                        
+
         }
     }
-    catch(err){
+    catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+// Unfollow Space
+UserRouter.put('/space/unfollow', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const { spaceId } = req.body;
+        if (spaceId === undefined || typeof spaceId !== 'string') {
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        const space = await getSpaceById(spaceId);
+        if (!space) {
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        else {
+            await unFollowSpace(username, spaceId);
+            await addAction(username, `Unfollowed Space ${space.name}`);
+            res.send({
+                payload: {
+                    message: `Unfollowed Space ${space.name}`
+                },
+                error: false
+            })
+
+        }
+    }
+    catch (err) {
         console.error(err);
         res.status(500).send({
             payload: {
