@@ -222,12 +222,7 @@ export const isUserAdminofSpace = async(username: string, spaceId:string)=>{
       if(!space){
           return false;
       }
-      let isAdmin = false;
-      space.admins.forEach((admin:any)=>{
-          if(admin.username.toString() === username){
-              isAdmin = true;
-          }
-      });
+      let isAdmin = space.admins.some((admin: any) => admin.username.toString() === username);
       return isAdmin;
   }catch(err){
       console.error(err);

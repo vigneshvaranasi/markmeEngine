@@ -49,6 +49,7 @@ export const EventSchema = new Schema({
     },
     capacity:{
         type:Number,
+        default:Number.MAX_SAFE_INTEGER
     },
     contactDetails:[{
         type:{

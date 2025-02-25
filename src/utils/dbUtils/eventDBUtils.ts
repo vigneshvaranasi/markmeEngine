@@ -1,6 +1,6 @@
 import Event from "../../models/Event";
 import Space from "../../models/Space";
-import { EventType } from "../../types/EventTypes";
+import { EventContactDetail, EventHost, EventManager, EventType } from "../../types/EventTypes";
 import { addAction } from "./actionDBUtils";
 import { getSpaceById, isUserAdminofSpace } from "./spaceDBUtils";
 import { getUserByUsername } from "./userDBUtils";
@@ -33,6 +33,20 @@ export const getEventsBySpaceId = async (spaceId: string) => {
         return events;
     } catch (err) {
         console.log(err);
+        return null;
+    }
+}
+
+// To get Event by _id
+export const getEventById = async (eventId: string) => {
+    try {
+        const event = await Event.findById(eventId).populate('spaceId').populate('managers');
+        if(!event){
+            return null;
+        }
+        return event;
+    } catch (err) {
+        console.error(err);
         return null;
     }
 }
@@ -82,9 +96,9 @@ export async function createEvent(username: string, spaceId: string, eventDetail
         space.events.addToSet(newEvent._id)
         await space.save();
         // change in User document by adding this event id to the user document
-        for(const userId of adminUserIds){
+        for (const userId of adminUserIds) {
             const user = await getUserByUsername(userId);
-            if(user){
+            if (user) {
                 user.managingEvents.addToSet(newEvent._id);
                 await user.save();
             }
@@ -97,6 +111,290 @@ export async function createEvent(username: string, spaceId: string, eventDetail
         return newEvent;
     }
     catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+// update event details
+export async function updateEventDetails(username: string, eventId: string, eventDetails: EventType) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        if (eventDetails.name == undefined || eventDetails.description == undefined || eventDetails.timings.start == undefined || eventDetails.timings.end == undefined || eventDetails.status == undefined || eventDetails.venue.name == undefined || eventDetails.venue.address == undefined || eventDetails.visibility == undefined || eventDetails.poster == undefined || eventDetails.feedbackURL == undefined || eventDetails.capacity == undefined) {
+            return null;
+        }
+        const updatedEvent = await Event.updateOne({ _id: eventId }, {
+            $set: {
+                name: eventDetails.name,
+                description: eventDetails.description,
+                status: eventDetails.status,
+                timings: {
+                    start: eventDetails.timings.start,
+                    end: eventDetails.timings.end
+                },
+                venue: {
+                    name: eventDetails.venue.name,
+                    address: eventDetails.venue.address
+                },
+                visibility: eventDetails.visibility,
+                poster: eventDetails.poster,
+                feedbackURL: eventDetails.feedbackURL,
+                capacity: eventDetails.capacity
+            }
+        })
+        await addAction(username, `Updated Event ${event.name} of spaceid: ${event.spaceId}`);
+        return updatedEvent;
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+// add an event manager
+export async function addEventManagers(username: string, eventId: string, managerDetails: EventManager) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        const manager = await getUserByUsername(managerDetails);
+        if (!manager) {
+            return null;
+        }
+        event.managers.addToSet(manager._id);
+        await event.save();
+        manager.managingEvents.addToSet(event._id);
+        await manager.save()
+        await addAction(username, `Added Manager ${manager.username} to Event ${event.name}`);
+        return event.managers;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+export async function removeEventManagers(username: string, eventId: string, managerDetails: EventManager) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        const manager = await getUserByUsername(managerDetails);
+        if (!manager) {
+            return null;
+        }
+        event.managers.pull(manager._id);
+        await event.save();
+        manager.managingEvents.pull(event._id);
+        await manager.save()
+        await addAction(username, `Removed Manager ${manager.username} from Event ${event.name}`);
+        return event.managers;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+// add an event host
+export async function addEventHosts(username: string, eventId: string, hostsDetails: EventHost) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        const host = await getUserByUsername(hostsDetails);
+        if (!host) {
+            return null;
+        }
+        event.hosts.addToSet(host._id);
+        await event.save();
+        await addAction(username, `Added Host ${host.username} to Event ${event.name}`);
+        return event.hosts;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+export async function removeEventHosts(username: string, eventId: string, hostsDetails: EventHost) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        const host = await getUserByUsername(hostsDetails);
+        if (!host) {
+            return null;
+        }
+        event.hosts.pull(host._id);
+        await event.save();
+        await addAction(username, `Remove Host ${host.username} from Event ${event.name}`);
+        return event.hosts;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+// add contact Details
+export async function addContactDetails(username: string, eventId: string, contactDetails: EventContactDetail) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        event.contactDetails.push(contactDetails)
+        await event.save();
+        await addAction(username, `Added Contact Details to Event ${event.name}`);
+        return event.contactDetails;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+export async function removeContactDetails(username: string, eventId: string, contactDetails: EventContactDetail) {
+    try {
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return null;
+        }
+        (event.contactDetails as any).pull(contactDetails)
+        await event.save();
+        await addAction(username, `Remove Contact Details to Event ${event.name}`);
+        return event.contactDetails;
+    }
+    catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+export async function isAttendee(username:string, eventId:string){
+    try{
+        const user = await getUserByUsername(username);
+        if(!user){
+            return false;
+        }
+        const event = await Event.findById(eventId).select('attendees');
+        if(!event){
+            return false;
+        }
+        const isAttendee = event.attendees.some((att:any)=>{
+            return att.toString() === user._id.toString();
+        })
+        return isAttendee;
+    }catch(err){
+        console.error(err);
+        return false;
+    }
+}
+
+export async function isCheckedIn(username:string, eventId:string){
+    try{
+        const user = await getUserByUsername(username);
+        if(!user){
+            return false;
+        }
+        const event = await Event.findById(eventId).select('checkedIn');
+        if(!event){
+            return false;
+        }
+        const isCheckedIn = event.checkedIn.some((att:any)=>{
+            return att.toString() === user._id.toString();
+        })
+        return isCheckedIn;
+    }catch(err){
+        console.error(err);
+        return false;
+    }
+}
+
+export async function checkInUser(username:string,eventId:string){
+    try{
+        const user = await getUserByUsername(username)
+        if(!user){
+            return null;
+        }
+        const isAtt = await isAttendee(username,eventId);
+        if(!isAtt){
+            return null;
+        }
+        const event = await Event.updateOne({
+            _id:eventId
+        },{
+            $addToSet:{
+                checkedIn:user._id
+            }
+        })
+        return event;
+    }catch(err){
+        console.error(err);
+        return null;
+    }
+}
+export async function unCheckInUser(username:string,eventId:string){
+    try{
+        const user = await getUserByUsername(username)
+        if(!user){
+            return null;
+        }
+        const isCheck = await isCheckedIn(username,eventId);
+        if(!isCheck){
+            return null;
+        }
+        const event = await Event.updateOne({_id:eventId},{
+            $pull:{
+                checkedIn:user._id
+            }
+        })
+        return event;
+    }catch(err){
+        console.error(err);
+        return null;
+    }
+}
+
+export async function getAttendees(eventId:string){
+    try{
+        const event = await Event.findById(eventId).populate('attendees').select('attendees');
+        if(!event){
+            return null;
+        }
+        return event.attendees;
+    }
+    catch(err){
+        console.error(err);
+        return null;
+    }
+}
+
+export async function getCheckIns(eventId:string){
+    try{
+        const event = await Event.findById(eventId).populate('checkedIn').select('checkedIn');
+        if(!event){
+            return null;
+        }
+        return event.checkedIn;
+    }catch(err){
+        console.error(err);
+        return null;
+    }
+}
+
+export async function getManagers(eventId:string){
+    try{
+        const event = await Event.findById(eventId).populate('managers').select('managers');
+        if(!event){
+            return null;
+        }
+        return event.managers;
+    }catch(err){
         console.error(err);
         return null;
     }

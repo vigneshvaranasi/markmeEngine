@@ -2,9 +2,11 @@ import User from '../../models/User'
 import Otp from '../../models/Otp'
 import Action from '../../models/Action'
 import Space from '../../models/Space'
+import Event from '../../models/Event'
 import { UserType } from '../../types/UserTypes'
 import { SpaceType } from '../../types/SpaceTypes'
 import mongoose from 'mongoose'
+import { getEventById } from './eventDBUtils'
 
 export const getUserById = async (id: string) => {
   try {
@@ -181,5 +183,48 @@ export const updateUserPassword = async (username: string, password: string) => 
     })
   } catch (err) {
     console.error(err)
+  }
+}
+export const unmarkUser = async (username:string,eventId:string)=>{
+  try{
+    const user = await getUserByUsername(username);
+    if(!user){
+      return null;
+    }
+    const event = await Event.findOne({_id:eventId});
+    if(!event){
+      return null;
+    }
+    event.attendees.pull(user._id);
+    await event.save();
+    user.registeredEvents.pull(event._id);
+    await user.save();
+    return event;
+  }
+  catch(err){
+    console.log(err);
+    return null;
+  }
+}
+
+export const markmeUser = async (username:string,eventId:string)=>{
+  try{
+    const user = await getUserByUsername(username);
+    if(!user){
+      return null;
+    }
+    const event = await getEventById(eventId);
+    if(!event){
+      return null;
+    }
+    event.attendees.addToSet(user._id);
+    await event.save();
+    user.registeredEvents.addToSet(eventId);
+    await user.save();
+    return event;    
+  }
+  catch(err){
+    console.log(err)
+    return null;
   }
 }
