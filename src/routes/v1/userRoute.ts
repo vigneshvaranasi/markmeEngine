@@ -1,10 +1,14 @@
 import express, { Router, Request } from "express";
 import ENV from './../../configs/default';
 import verifyToken from "../../middleware/userMiddleware";
+import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto } from "../../utils/dbUtils/userDBUtils";
+import { updateUserNotification } from "../../utils/dbUtils/userDBUtils";
+import { addAction } from "../../utils/dbUtils/actionDBUtils";
+import { getSpaceById, unFollowSpace } from "../../utils/dbUtils/spaceDBUtils";
+import { followSpace } from "../../utils/dbUtils/spaceDBUtils";
 
 
 const UserRouter = Router();
-import { updateUserNotification, addAction, updateUserEmail, updateUserFullname, updateUserProfilePhoto, updateUserPassword } from "../../utils/dbUtils";
 
 UserRouter.get('/', (req, res) => {
     res.send('User Route');
@@ -43,40 +47,6 @@ UserRouter.put('/set/notification', async (req, res) => {
         })
     }
 })
-
-
-UserRouter.put('/set/updateEmail', async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (email === undefined || typeof email !== 'string') {
-            res.status(400).send({
-                payload: {
-                    message: 'Please Provide Email'
-                },
-                error: true
-            })
-            return
-        }
-        const username = req.user?.username as string;
-        await updateUserEmail(username, email);
-        await addAction(username, `Email Updated to ${email}`);
-        // TODO : Update in Sevice
-        res.send({
-            payload: {
-                message: `Email Updated to ${email}`
-            },
-            error: false
-        })
-    } catch (err) {
-        console.error(err);
-        res.status(500).send({
-            payload: {
-                message: "Internal Server Error: " + err
-            },
-            error: true
-        })
-    }
-});
 
 UserRouter.put('/set/updateName', async (req, res) => {
     try {
@@ -164,6 +134,182 @@ UserRouter.put('/set/updatePassword', async (req, res) => {
             error: false
         })
     } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+
+// Follow Space
+UserRouter.put('/space/follow', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const { spaceId } = req.body;
+        if (spaceId === undefined || typeof spaceId !== 'string') {
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        const space = await getSpaceById(spaceId);
+        if (!space) {
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        else {
+            await followSpace(username, spaceId);
+            await addAction(username, `Followed Space ${space.name}`);
+            res.send({
+                payload: {
+                    message: `Followed Space ${space.name}`
+                },
+                error: false
+            })
+
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+// Unfollow Space
+UserRouter.put('/space/unfollow', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const { spaceId } = req.body;
+        if (spaceId === undefined || typeof spaceId !== 'string') {
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        const space = await getSpaceById(spaceId);
+        if (!space) {
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Space ID'
+                },
+                error: true
+            })
+            return
+        }
+        else {
+            await unFollowSpace(username, spaceId);
+            await addAction(username, `Unfollowed Space ${space.name}`);
+            res.send({
+                payload: {
+                    message: `Unfollowed Space ${space.name}`
+                },
+                error: false
+            })
+
+        }
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+
+UserRouter.put('/event/markme', async(req,res)=>{
+    try{
+        const username = req.user?.username as string;
+        const {eventId} = req.body;
+        if(eventId === undefined || typeof eventId !== 'string'){
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Event ID'
+                },
+                error: true
+            })
+            return
+        }
+        const markedEvent = await markmeUser(username, eventId);
+        if(!markedEvent){
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Event ID'
+                },
+                error: true
+            })
+            return
+        }
+        await addAction(username, `Marked in Event ${markedEvent.name}`);
+        res.send({
+            payload: {
+                message: `Marked in Event ${markedEvent.name}`
+            },
+            error: false
+        })
+
+    }catch(err){
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+})
+UserRouter.put('/event/unmarkme', async(req,res)=>{
+    try{
+        const username = req.user?.username as string;
+        const {eventId} = req.body;
+        if(eventId === undefined || typeof eventId !== 'string'){
+            res.status(400).send({
+                payload: {
+                    message: 'Please Provide Event ID'
+                },
+                error: true
+            })
+            return
+        }
+        const markedEvent = await unmarkUser(username, eventId);
+        if(!markedEvent){
+            res.status(400).send({
+                payload: {
+                    message: 'Invalid Event ID'
+                },
+                error: true
+            })
+            return
+        }
+        await addAction(username, `Unmarked in Event ${markedEvent.name}`);
+        res.send({
+            payload: {
+                message: `Unmarked in Event ${markedEvent.name}`
+            },
+            error: false
+        })
+
+    }catch(err){
         console.error(err);
         res.status(500).send({
             payload: {

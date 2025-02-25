@@ -4,6 +4,11 @@ export const EventSchema = new Schema({
         type:String,
         required:true
     },
+    spaceId:{
+        type:Types.ObjectId,
+        ref:"Space",
+        required:true
+    },
     managers:[{
         type:Types.ObjectId,
         ref:"User"
@@ -25,10 +30,7 @@ export const EventSchema = new Schema({
         ref:"User"
     }],
     description:{
-        type:{
-            description:String,
-            guidelines:String
-        },
+        type:String
     },
     venue:{
         type:{
@@ -44,16 +46,16 @@ export const EventSchema = new Schema({
     },
     poster:{
         type:String,
-        required:true
     },
     capacity:{
         type:Number,
+        default:Number.MAX_SAFE_INTEGER
     },
     contactDetails:[{
         type:{
             name:String,
             phone:String,
-            email:String(10)
+            email:String
         }
     }],
     hosts:[{
