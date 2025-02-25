@@ -3,7 +3,7 @@ import Space from "../../models/Space";
 import { EventContactDetail, EventHost, EventManager, EventType } from "../../types/EventTypes";
 import { addAction } from "./actionDBUtils";
 import { getSpaceById, isUserAdminofSpace } from "./spaceDBUtils";
-import { getUserByUsername } from "./userDBUtils";
+import { getUserById, getUserByUsername } from "./userDBUtils";
 
 
 // To Get All the Events from the DB
@@ -41,7 +41,7 @@ export const getEventsBySpaceId = async (spaceId: string) => {
 export const getEventById = async (eventId: string) => {
     try {
         const event = await Event.findById(eventId).populate('spaceId').populate('managers');
-        if(!event){
+        if (!event) {
             return null;
         }
         return event;
@@ -67,6 +67,8 @@ export async function createEvent(username: string, spaceId: string, eventDetail
         const adminUserIds = admins.map(admin => {
             return admin._id.toString();
         })
+        // console.log('adminUserIds: ', adminUserIds);
+        
         // create event
         const newEvent = new Event({
             spaceId: spaceId,
@@ -97,7 +99,7 @@ export async function createEvent(username: string, spaceId: string, eventDetail
         await space.save();
         // change in User document by adding this event id to the user document
         for (const userId of adminUserIds) {
-            const user = await getUserByUsername(userId);
+            const user = await getUserById(userId);
             if (user) {
                 user.managingEvents.addToSet(newEvent._id);
                 await user.save();
@@ -115,6 +117,63 @@ export async function createEvent(username: string, spaceId: string, eventDetail
         return null;
     }
 }
+
+export async function deleteEvent(username: string, eventId: string) {
+    try {
+        const event = await getEventById(eventId);
+        if (!event) {
+            return null;
+        }
+        if(!event.spaceId){
+            return null;
+        }
+        const spaceId = (event.spaceId as any)._id.toString();
+        // console.log('spaceId: ', spaceId);
+        
+        // const space = await getSpaceById(spaceId);
+        // if (!space) {
+        //     return null;
+        // }
+        // const isUserAdmin = await isUserAdminofSpace(username, spaceId);
+        // if (!isUserAdmin) {
+        //     return null;
+        // }
+        // const managers = event.managers;
+        // const deleteEventFromManaging = managers.forEach(async (manager: any) => {
+        //     const user = await getUserById(manager);
+        //     if (user) {
+        //         user.managingEvents.pull(eventId);
+        //         await user.save();
+        //     }
+        // })
+        // const registered = event.attendees;
+        // const deleteEventFromRegistered = registered.forEach(async (reg: any) => {
+        //     const user = await getUserById(reg);
+        //     if (user) {
+        //         user.registeredEvents.pull(eventId);
+        //         await user.save();
+        //     }
+        // })
+        // const attendees = event.checkedIn;
+        // const deleteEventFromCheckedIn = attendees.forEach(async (att: any) => {
+        //     const user = await getUserById(att);
+        //     if (user) {
+        //         user.attendedEvents.pull(eventId);
+        //         await user.save();
+        //     }
+        // });
+        // await Promise.all([deleteEventFromManaging, deleteEventFromRegistered, deleteEventFromCheckedIn]);
+        // space.events.pull(eventId);
+        // await space.save();
+        // const deletedEvent = await Event.deleteOne({_id:eventId});
+        // // notify service TO-DO
+        // await addAction(username, `Deleted Event ${event.name} from space: ${space.name}`);
+        // return deletedEvent;
+    } catch (error) {
+        return null;
+    }
+}
+
 
 // update event details
 export async function updateEventDetails(username: string, eventId: string, eventDetails: EventType) {
@@ -275,126 +334,126 @@ export async function removeContactDetails(username: string, eventId: string, co
     }
 }
 
-export async function isAttendee(username:string, eventId:string){
-    try{
+export async function isAttendee(username: string, eventId: string) {
+    try {
         const user = await getUserByUsername(username);
-        if(!user){
+        if (!user) {
             return false;
         }
         const event = await Event.findById(eventId).select('attendees');
-        if(!event){
+        if (!event) {
             return false;
         }
-        const isAttendee = event.attendees.some((att:any)=>{
+        const isAttendee = event.attendees.some((att: any) => {
             return att.toString() === user._id.toString();
         })
         return isAttendee;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return false;
     }
 }
 
-export async function isCheckedIn(username:string, eventId:string){
-    try{
+export async function isCheckedIn(username: string, eventId: string) {
+    try {
         const user = await getUserByUsername(username);
-        if(!user){
+        if (!user) {
             return false;
         }
         const event = await Event.findById(eventId).select('checkedIn');
-        if(!event){
+        if (!event) {
             return false;
         }
-        const isCheckedIn = event.checkedIn.some((att:any)=>{
+        const isCheckedIn = event.checkedIn.some((att: any) => {
             return att.toString() === user._id.toString();
         })
         return isCheckedIn;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return false;
     }
 }
 
-export async function checkInUser(username:string,eventId:string){
-    try{
+export async function checkInUser(username: string, eventId: string) {
+    try {
         const user = await getUserByUsername(username)
-        if(!user){
+        if (!user) {
             return null;
         }
-        const isAtt = await isAttendee(username,eventId);
-        if(!isAtt){
+        const isAtt = await isAttendee(username, eventId);
+        if (!isAtt) {
             return null;
         }
         const event = await Event.updateOne({
-            _id:eventId
-        },{
-            $addToSet:{
-                checkedIn:user._id
+            _id: eventId
+        }, {
+            $addToSet: {
+                checkedIn: user._id
             }
         })
         return event;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return null;
     }
 }
-export async function unCheckInUser(username:string,eventId:string){
-    try{
+export async function unCheckInUser(username: string, eventId: string) {
+    try {
         const user = await getUserByUsername(username)
-        if(!user){
+        if (!user) {
             return null;
         }
-        const isCheck = await isCheckedIn(username,eventId);
-        if(!isCheck){
+        const isCheck = await isCheckedIn(username, eventId);
+        if (!isCheck) {
             return null;
         }
-        const event = await Event.updateOne({_id:eventId},{
-            $pull:{
-                checkedIn:user._id
+        const event = await Event.updateOne({ _id: eventId }, {
+            $pull: {
+                checkedIn: user._id
             }
         })
         return event;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return null;
     }
 }
 
-export async function getAttendees(eventId:string){
-    try{
+export async function getAttendees(eventId: string) {
+    try {
         const event = await Event.findById(eventId).populate('attendees').select('attendees');
-        if(!event){
+        if (!event) {
             return null;
         }
         return event.attendees;
     }
-    catch(err){
+    catch (err) {
         console.error(err);
         return null;
     }
 }
 
-export async function getCheckIns(eventId:string){
-    try{
+export async function getCheckIns(eventId: string) {
+    try {
         const event = await Event.findById(eventId).populate('checkedIn').select('checkedIn');
-        if(!event){
+        if (!event) {
             return null;
         }
         return event.checkedIn;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return null;
     }
 }
 
-export async function getManagers(eventId:string){
-    try{
+export async function getManagers(eventId: string) {
+    try {
         const event = await Event.findById(eventId).populate('managers').select('managers');
-        if(!event){
+        if (!event) {
             return null;
         }
         return event.managers;
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return null;
     }

@@ -202,7 +202,7 @@ export const unmarkUser = async (username:string,eventId:string)=>{
     return event;
   }
   catch(err){
-    console.log(err);
+    console.error(err);
     return null;
   }
 }
@@ -224,7 +224,7 @@ export const markmeUser = async (username:string,eventId:string)=>{
     return event;    
   }
   catch(err){
-    console.log(err)
+    console.error(err)
     return null;
   }
 }

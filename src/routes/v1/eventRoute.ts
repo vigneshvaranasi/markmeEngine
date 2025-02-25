@@ -1,7 +1,7 @@
 import express, { Router } from 'express'
 import verifyToken from '../../middleware/userMiddleware';
 import { CreateEventBody, EventManager, EventType, UpdateEventBody } from '../../types/EventTypes';
-import { addContactDetails, addEventHosts, addEventManagers, createEvent, getAllEvents, removeEventHosts, removeEventManagers, updateEventDetails, removeContactDetails, checkInUser, unCheckInUser, getAttendees, getCheckIns, getManagers } from '../../utils/dbUtils/eventDBUtils';
+import { addContactDetails, addEventHosts, addEventManagers, createEvent, getAllEvents, removeEventHosts, removeEventManagers, updateEventDetails, removeContactDetails, checkInUser, unCheckInUser, getAttendees, getCheckIns, getManagers, deleteEvent } from '../../utils/dbUtils/eventDBUtils';
 import { isEventManager } from '../../middleware/eventMiddleware';
 const EventRoute = Router();
 
@@ -71,6 +71,32 @@ EventRoute.post('/create', async (req, res) => {
         })
     }
 });
+
+EventRoute.delete('/delete', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const { eventId } = req.body;
+        const event = await deleteEvent(username, eventId);
+        if (!event) {
+            throw new Error('Event Deletion Failed');
+        }
+        res.status(200).send({
+            payload: {
+                message: 'Event Deleted',
+                event: event
+            },
+            error: false
+        })
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: 'Internal Server Error: ' + err
+            },
+            error: true
+        })
+    }
+})
 
 EventRoute.use(isEventManager);
 EventRoute.put('/update', async (req, res) => {

@@ -111,8 +111,8 @@ AuthRouter.post('/verifyOtp', async (req, res) => {
       })
       return
     }
-    console.log('email: ', email)
-    console.log('otp: ', otp)
+    // console.log('email: ', email)
+    // console.log('otp: ', otp)
     const user = await getOTP(email.toString(), otp.toString())
     console.log('user: ', user)
     if (!user) {
