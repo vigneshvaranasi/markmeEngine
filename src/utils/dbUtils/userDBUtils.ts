@@ -7,6 +7,7 @@ import { UserType } from '../../types/UserTypes'
 import { SpaceType } from '../../types/SpaceTypes'
 import mongoose from 'mongoose'
 import { getEventById } from './eventDBUtils'
+import { createSpace } from './spaceDBUtils'
 
 export const getUserById = async (id: string) => {
   try {
@@ -62,6 +63,13 @@ export const createUser = async ({
       fullname: fullname
     })
     await user.save()
+    const spaceName = username + "'s Space"
+    const newDefaultSpace = await createSpace(username,spaceName, profilePhoto, [] );
+    if(!newDefaultSpace){
+      return null;
+    }
+    user.managingSpaces.addToSet(newDefaultSpace._id);
+    await user.save();
     return user
   } catch (err) {
     console.error(err)
