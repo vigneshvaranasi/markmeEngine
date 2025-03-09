@@ -24,7 +24,7 @@ EventRoute.get('/all', async (req, res) => {
             })
             return;
         }
-        const events = await getAllEvents();
+        const events = await getAllEvents(username);
         if (!events) {
             throw new Error('Events Fetch Failed');
         }

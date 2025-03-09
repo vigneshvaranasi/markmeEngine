@@ -142,29 +142,24 @@ export const getUserEvents = async (username: string) => {
 
     const events:any = await Event.find({
       _id: { $in: allEventIds }
-    }).populate('spaceId', 'name');
+    }).populate('spaceId', 'name')
+    .populate('hosts', 'fullname username')
+    .populate('managers', 'fullname username')
+    .populate('attendees', 'fullname username')
+    .populate('checkedIn', 'fullname username');
 
     if (!events) {
       return null;
     }
-    const formatEvent = (event:any) => ({
-      name: event.name,
-      space: {
-        name: event.spaceId.name,
-        _id: event.spaceId._id
-      },
-      timings: {
-        start: event.timings.start,
-        end: event.timings.end
-      },
-      venue: event.venue.name,
-      attendeesCount: event.attendees.length,
-      status: event.status,
-      poster: event.poster
-    })
-
-    const pastEvents = events.filter((event:any) => new Date(event.timings.end) < currentDate).map(formatEvent);
-    const upcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate).map(formatEvent);
+    const eventsWithManagerFlag = events.map((event: any) => {
+      const isManager = event.managers.some((manager: any) => manager.username.toString() === username);
+      return {
+          ...event.toObject(),
+          isManager
+      };
+  });
+    const pastEvents = eventsWithManagerFlag.filter((event:any) => new Date(event.timings.end) < currentDate);
+    const upcomingEvents = eventsWithManagerFlag.filter((event:any) => new Date(event.timings.start) > currentDate);
 
     return { pastEvents, upcomingEvents };
 

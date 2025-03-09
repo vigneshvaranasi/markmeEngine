@@ -7,33 +7,30 @@ import { getUserById, getUserByUsername } from "./userDBUtils";
 
 
 // To Get All the Events from the DB
-export const getAllEvents = async () => {
+export const getAllEvents = async (username:string) => {
     try {
-        const events = await Event.find().populate('spaceId', 'name');
+        const events = await Event.find()
+        .populate('spaceId', 'name')
+        .populate('hosts', 'fullname username')
+        .populate('managers', 'fullname username')
+        .populate('attendees', 'fullname username')
+        .populate('checkedIn', 'fullname username');
         if (events.length === 0) {
             return [];
         }
 
-        const formatEvent = (event:any) => ({
-            name: event.name,
-            space: {
-              name: event.spaceId.name,
-              _id: event.spaceId._id
-            },
-            timings: {
-              start: event.timings.start,
-              end: event.timings.end
-            },
-            venue: event.venue.name,
-            attendeesCount: event.attendees.length,
-            status: event.status,
-            poster: event.poster
-        })
-
         const currentDate = new Date();
-        const allUpcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate).map(formatEvent);
+        const allUpcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate);
 
-        return allUpcomingEvents;
+        const eventsWithManagerFlag = allUpcomingEvents.map((event: any) => {
+            const isManager = event.managers.some((manager: any) => manager.username.toString() === username);
+            return {
+                ...event.toObject(),
+                isManager
+            };
+        });
+
+        return eventsWithManagerFlag;
     } catch (err) {
         console.error(err);
         return null;
@@ -103,7 +100,7 @@ export async function createEvent(username: string, spaceId: string, eventDetail
             contactDetails: eventDetails.contactDetails,
             hosts: [],
             name: eventDetails.name,
-            poster: eventDetails.poster,
+            poster: eventDetails.poster || "",
             status: eventDetails.status,
             timings: {
                 start: eventDetails.timings.start,
