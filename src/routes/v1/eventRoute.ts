@@ -12,7 +12,7 @@ EventRoute.get('/', (req, res) => {
 EventRoute.use(verifyToken);
 
 // Get Events
-EventRoute.get('/getAll', async (req, res) => {
+EventRoute.get('/all', async (req, res) => {
     try {
         const username = req.user?.username as string;
         if (!username) {

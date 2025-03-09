@@ -1,7 +1,7 @@
 import express, { Router, Request } from "express";
 import ENV from './../../configs/default';
 import verifyToken from "../../middleware/userMiddleware";
-import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto } from "../../utils/dbUtils/userDBUtils";
+import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto,getUserEvents } from "../../utils/dbUtils/userDBUtils";
 import { updateUserNotification } from "../../utils/dbUtils/userDBUtils";
 import { addAction } from "../../utils/dbUtils/actionDBUtils";
 import { getSpaceById, unFollowSpace } from "../../utils/dbUtils/spaceDBUtils";
@@ -15,6 +15,39 @@ UserRouter.get('/', (req, res) => {
 });
 
 UserRouter.use(verifyToken);
+
+UserRouter.get('/events', async (req, res) => {
+    try {
+        const username = req.user?.username as string;
+        const events = await getUserEvents(username);
+        if (!events) {
+            res.status(404).send({
+                payload: {
+                    message: "Events not found"
+                },
+                error: true
+            });
+            return;
+        }
+        const { pastEvents, upcomingEvents } = events;
+        res.send({
+            payload: {
+                pastEvents,
+                upcomingEvents
+            },
+            error: false
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + error
+            },
+            error: true
+        })
+    }
+})
+
 UserRouter.put('/set/notification', async (req, res) => {
     try {
         const { notification } = req.body;

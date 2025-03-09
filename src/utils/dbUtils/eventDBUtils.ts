@@ -9,8 +9,31 @@ import { getUserById, getUserByUsername } from "./userDBUtils";
 // To Get All the Events from the DB
 export const getAllEvents = async () => {
     try {
-        const events = await Event.find().populate('spaceId');
-        return events;
+        const events = await Event.find().populate('spaceId', 'name');
+        if (events.length === 0) {
+            return [];
+        }
+
+        const formatEvent = (event:any) => ({
+            name: event.name,
+            space: {
+              name: event.spaceId.name,
+              _id: event.spaceId._id
+            },
+            timings: {
+              start: event.timings.start,
+              end: event.timings.end
+            },
+            venue: event.venue.name,
+            attendeesCount: event.attendees.length,
+            status: event.status,
+            poster: event.poster
+        })
+
+        const currentDate = new Date();
+        const allUpcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate).map(formatEvent);
+
+        return allUpcomingEvents;
     } catch (err) {
         console.error(err);
         return null;

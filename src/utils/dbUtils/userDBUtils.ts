@@ -5,9 +5,10 @@ import Space from '../../models/Space'
 import Event from '../../models/Event'
 import { UserType } from '../../types/UserTypes'
 import { SpaceType } from '../../types/SpaceTypes'
-import mongoose from 'mongoose'
+import mongoose, { Date } from 'mongoose'
 import { getEventById } from './eventDBUtils'
 import { createSpace } from './spaceDBUtils'
+import { EventType } from '../../types/EventTypes'
 
 export const getUserById = async (id: string) => {
   try {
@@ -122,6 +123,56 @@ export const deleteOTP = async (email: string) => {
     console.error(err)
   }
 }
+
+
+export const getUserEvents = async (username: string) => {
+  try {
+    const user = await getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+    const currentDate = new Date();
+
+    const allSpacesId = [
+      ...user.followingSpaces.map(space => space._id),
+      ...user.managingSpaces.map(space => space._id)
+    ];
+    const spaces = await Space.find({ _id: { $in: allSpacesId } }).populate('events');
+    const allEventIds = spaces.flatMap(space => space.events.map(event => event._id));
+
+    const events:any = await Event.find({
+      _id: { $in: allEventIds }
+    }).populate('spaceId', 'name');
+
+    if (!events) {
+      return null;
+    }
+    const formatEvent = (event:any) => ({
+      name: event.name,
+      space: {
+        name: event.spaceId.name,
+        _id: event.spaceId._id
+      },
+      timings: {
+        start: event.timings.start,
+        end: event.timings.end
+      },
+      venue: event.venue.name,
+      attendeesCount: event.attendees.length,
+      status: event.status,
+      poster: event.poster
+    })
+
+    const pastEvents = events.filter((event:any) => new Date(event.timings.end) < currentDate).map(formatEvent);
+    const upcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate).map(formatEvent);
+
+    return { pastEvents, upcomingEvents };
+
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+};
 
 
 export const updateUserNotification = async (username: string, notification: boolean) => {
