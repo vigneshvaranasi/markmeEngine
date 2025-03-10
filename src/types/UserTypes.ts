@@ -1,10 +1,10 @@
 export type UserType = {
-  username: string,
+  username: string
   email: string
-  password: string;
-  profilePhoto: string;
+  password: string
+  profilePhoto: string
   gender: 'Male' | 'Female'
-  fullname:string
+  fullname: string
 }
 
-export default UserType;
+export default UserType

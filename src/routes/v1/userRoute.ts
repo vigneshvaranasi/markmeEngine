@@ -1,7 +1,7 @@
 import express, { Router, Request } from "express";
 import ENV from './../../configs/default';
 import verifyToken from "../../middleware/userMiddleware";
-import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto,getUserEvents } from "../../utils/dbUtils/userDBUtils";
+import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto,getUserEvents, getUserByUsername } from "../../utils/dbUtils/userDBUtils";
 import { updateUserNotification } from "../../utils/dbUtils/userDBUtils";
 import { addAction } from "../../utils/dbUtils/actionDBUtils";
 import { getSpaceById, unFollowSpace } from "../../utils/dbUtils/spaceDBUtils";
@@ -15,6 +15,54 @@ UserRouter.get('/', (req, res) => {
 });
 
 UserRouter.use(verifyToken);
+UserRouter.get('/verify', async (req, res) => {
+    try{
+        const username = req.user?.username as string;
+        let user = (await getUserByUsername(username)) as any;
+        if (!user) {
+            res.status(401).send({
+              payload: {
+                message: 'Invalid Username or Password'
+              },
+              error: true
+            })
+            return
+        }
+        let managingSpaces = [];
+        if (user.managingSpaces.length > 0) {
+          managingSpaces = await Promise.all(
+            user.managingSpaces.map(async (spaceId: any) => {
+              const space = await getSpaceById(spaceId);
+              return space ? { id: space._id, name: space.name } : null;
+            })
+          );
+          managingSpaces = managingSpaces.filter((space) => space !== null);
+        }
+        res.status(200).send({
+            payload: {
+              message: 'Verify Successful',
+              user: {
+                username: user.username,
+                email: user.email,
+                fullname: user.fullname,
+                profilePhoto: user.profilePhoto,
+                gender: user.gender,
+                managingSpaces: managingSpaces
+              }
+            },
+            error: false
+        })    
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+});
 
 UserRouter.get('/events', async (req, res) => {
     try {

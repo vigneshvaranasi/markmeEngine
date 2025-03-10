@@ -8,6 +8,7 @@ import ENV from '../../configs/default'
 import { generateOTP } from '../../utils/authUtils'
 import UserType from '../../types/UserTypes'
 import { createOTP, createUser, deleteOTP, getOTP, getUserByEmail, getUserByUsername } from '../../utils/dbUtils/userDBUtils'
+import { getSpaceById } from '../../utils/dbUtils/spaceDBUtils'
 
 const AuthRouter = Router()
 
@@ -163,7 +164,7 @@ AuthRouter.post('/login', async (req, res) => {
       return
     }
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)
-    let user: UserType
+    let user: any
     if (isEmail) {
       user = (await getUserByEmail(id)) as typeof user
     } else {
@@ -189,7 +190,16 @@ AuthRouter.post('/login', async (req, res) => {
       })
       return
     }
-
+    let managingSpaces = [];
+    if (user.managingSpaces.length > 0) {
+      managingSpaces = await Promise.all(
+        user.managingSpaces.map(async (spaceId: any) => {
+          const space = await getSpaceById(spaceId);
+          return space ? { id: space._id, name: space.name } : null;
+        })
+      );
+      managingSpaces = managingSpaces.filter((space) => space !== null);
+    }
     const token = jwt.sign(
       {
         username: user.username,
@@ -209,7 +219,8 @@ AuthRouter.post('/login', async (req, res) => {
           email: user.email,
           fullname: user.fullname,
           profilePhoto: user.profilePhoto,
-          gender: user.gender
+          gender: user.gender,
+          managingSpaces: managingSpaces
         }
       },
       error: false

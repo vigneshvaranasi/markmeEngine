@@ -1,5 +1,6 @@
 import Event from "../../models/Event";
 import Space from "../../models/Space";
+import User from "../../models/User";
 import { EventContactDetail, EventHost, EventManager, EventType } from "../../types/EventTypes";
 import { addAction } from "./actionDBUtils";
 import { getSpaceById, isUserAdminofSpace } from "./spaceDBUtils";
@@ -9,7 +10,12 @@ import { getUserById, getUserByUsername } from "./userDBUtils";
 // To Get All the Events from the DB
 export const getAllEvents = async (username:string) => {
     try {
-        const events = await Event.find()
+        const events = await Event.find({
+            $or: [
+                { visibility: "Public" },
+                { managers: await User.findOne({ username }).select("_id") }
+            ]
+        })
         .populate('spaceId', 'name')
         .populate('hosts', 'fullname username')
         .populate('managers', 'fullname username')
