@@ -127,47 +127,57 @@ export const deleteOTP = async (email: string) => {
 
 export const getUserEvents = async (username: string) => {
   try {
-    const user = await getUserByUsername(username);
+    const user = await getUserByUsername(username)
     if (!user) {
-      return null;
+      return null
     }
-    const currentDate = new Date();
+    const currentDate = new Date()
 
     const allSpacesId = [
       ...user.followingSpaces.map(space => space._id),
       ...user.managingSpaces.map(space => space._id)
-    ];
-    const spaces = await Space.find({ _id: { $in: allSpacesId } }).populate('events');
-    const allEventIds = spaces.flatMap(space => space.events.map(event => event._id));
+    ]
+    const spaces = await Space.find({ _id: { $in: allSpacesId } }).populate(
+      'events'
+    )
+    const allEventIds = spaces.flatMap(space =>
+      space.events.map(event => event._id)
+    )
 
-    const events:any = await Event.find({
+    const events: any = await Event.find({
       _id: { $in: allEventIds }
-    }).populate('spaceId', 'name')
-    .populate('hosts', 'fullname username')
-    .populate('managers', 'fullname username')
-    .populate('attendees', 'fullname username')
-    .populate('checkedIn', 'fullname username');
+    })
+      .populate('spaceId', 'name')
+      .populate('hosts', 'fullname username')
+      .populate('managers', 'fullname username')
+      .populate('attendees', 'fullname username')
+      .populate('checkedIn', 'fullname username')
 
     if (!events) {
-      return null;
+      return null
     }
     const eventsWithManagerFlag = events.map((event: any) => {
-      const isManager = event.managers.some((manager: any) => manager.username.toString() === username);
+      const isManager = event.managers.some(
+        (manager: any) => manager.username.toString() === username
+      )
       return {
-          ...event.toObject(),
-          isManager
-      };
-  });
-    const pastEvents = eventsWithManagerFlag.filter((event:any) => new Date(event.timings.end) < currentDate);
-    const upcomingEvents = eventsWithManagerFlag.filter((event:any) => new Date(event.timings.start) > currentDate);
+        ...event.toObject(),
+        isManager
+      }
+    })
+    const pastEvents = eventsWithManagerFlag.filter(
+      (event: any) => event.status === 'Archived'
+    )
+    const upcomingEvents = eventsWithManagerFlag.filter(
+      (event: any) =>  event.status === "Upcoming" || event.status === "Live"
+    )
 
-    return { pastEvents, upcomingEvents };
-
+    return { pastEvents, upcomingEvents }
   } catch (err) {
-    console.error(err);
-    return null;
+    console.error(err)
+    return null
   }
-};
+}
 
 
 export const updateUserNotification = async (username: string, notification: boolean) => {

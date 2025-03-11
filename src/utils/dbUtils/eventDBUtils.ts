@@ -14,7 +14,8 @@ export const getAllEvents = async (username:string) => {
             $or: [
                 { visibility: "Public" },
                 { managers: await User.findOne({ username }).select("_id") }
-            ]
+            ],
+            status:{$in:["Upcoming","Live"]}
         })
         .populate('spaceId', 'name')
         .populate('hosts', 'fullname username')
@@ -24,11 +25,7 @@ export const getAllEvents = async (username:string) => {
         if (events.length === 0) {
             return [];
         }
-
-        const currentDate = new Date();
-        const allUpcomingEvents = events.filter((event:any) => new Date(event.timings.start) > currentDate);
-
-        const eventsWithManagerFlag = allUpcomingEvents.map((event: any) => {
+        const eventsWithManagerFlag = events.map((event: any) => {
             const isManager = event.managers.some((manager: any) => manager.username.toString() === username);
             return {
                 ...event.toObject(),
