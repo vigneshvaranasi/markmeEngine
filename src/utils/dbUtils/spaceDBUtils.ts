@@ -53,6 +53,32 @@ export async function getSpaceById(spaceId: string) {
     return null;
   }
 }
+export async function getFullSpaceById(spaceId: string) {
+  try {
+    const space = await Space.findOne({
+      _id: spaceId
+    })
+    .populate("admins", "fullname username")
+    .populate("followers", "fullname username")
+    .populate({
+      path: "events",
+      match: { status: { $in: ["Upcoming", "Live"] } },
+      populate: [
+        { path: "spaceId", select: "name" },
+        { path: "hosts", select: "fullname username" },
+        { path: "managers", select: "fullname username" },
+        { path: "attendees", select: "fullname username" },
+        { path: "checkedIn", select: "fullname username" },
+      ],
+    });
+    if (space) {
+      return space;
+    }
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
 
 export async function followSpace(username: string, spaceId: string) {
   try {

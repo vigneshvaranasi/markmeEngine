@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createSpace, deleteSpaceById, updateSpaceDetails } from "../../utils/dbUtils/spaceDBUtils";
+import { createSpace, deleteSpaceById, getFullSpaceById, getSpaceById, updateSpaceDetails } from "../../utils/dbUtils/spaceDBUtils";
 import verifyToken from "../../middleware/userMiddleware";
 import { addAction } from "../../utils/dbUtils/actionDBUtils";
 const SpaceRouter = Router();
@@ -9,6 +9,46 @@ SpaceRouter.get("/", (req, res) => {
 });
 
 SpaceRouter.use(verifyToken);
+
+// get Space by ID
+SpaceRouter.get('/get/:id',async (req,res)=>{
+    try {
+        const { id } = req.params;
+        if (id === undefined) {
+            res.status(400).send({
+                payload: {
+                    message: "Please Provide Space Id"
+                },
+                error: true
+            });
+            return;
+        }
+        const space = await getFullSpaceById(id);
+        if (!space) {
+            res.status(400).send({
+                payload: {
+                    message: "Space Not Found"
+                },
+                error: true
+            });
+            return;
+        }
+        res.send({
+            payload: {
+                space: space
+            },
+            error: false
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error"
+            },
+            error: true
+        });
+    }
+})
 
 // Create Space
 SpaceRouter.post('/create', async (req, res) => {
