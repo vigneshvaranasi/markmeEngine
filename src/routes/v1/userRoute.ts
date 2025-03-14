@@ -1,7 +1,7 @@
 import express, { Router, Request } from "express";
 import ENV from './../../configs/default';
 import verifyToken from "../../middleware/userMiddleware";
-import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto,getUserEvents, getUserByUsername } from "../../utils/dbUtils/userDBUtils";
+import { markmeUser, unmarkUser, updateUserFullname, updateUserPassword, updateUserProfilePhoto,getUserEvents, getUserByUsername, getUserProfile } from "../../utils/dbUtils/userDBUtils";
 import { updateUserNotification } from "../../utils/dbUtils/userDBUtils";
 import { addAction } from "../../utils/dbUtils/actionDBUtils";
 import { getSpaceById, unFollowSpace } from "../../utils/dbUtils/spaceDBUtils";
@@ -94,6 +94,35 @@ UserRouter.get('/events', async (req, res) => {
             error: true
         })
     }
+})
+
+UserRouter.get('/profile',async(req,res)=>{
+    try{
+        const username = req.user?.username as string;
+        const profileData = await getUserProfile(username);
+        if(!profileData){
+            res.status(404).send({
+                payload: {
+                    message: "Profile not found"
+                },
+                error: true
+            });
+            return;
+        }
+        res.send({
+            payload: profileData,
+            error: false
+        })
+    }catch(err){
+        console.error(err);
+        res.status(500).send({
+            payload: {
+                message: "Internal Server Error: " + err
+            },
+            error: true
+        })
+    }
+
 })
 
 UserRouter.put('/set/notification', async (req, res) => {

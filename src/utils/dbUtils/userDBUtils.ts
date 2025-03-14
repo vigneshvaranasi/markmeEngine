@@ -179,6 +179,71 @@ export const getUserEvents = async (username: string) => {
   }
 }
 
+export const getUserProfile = async (username: string) => {
+  try {
+    const user = await getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+    const managingEvents = await Event.find({ _id: { $in: user.managingEvents } })
+      .populate("spaceId", "name")
+      .populate("hosts", "fullname username")
+      .populate("managers", "fullname username")
+      .populate("attendees", "fullname username")
+      .populate("checkedIn", "fullname username");
+    
+    const registeredEvents = await Event.find({ _id: { $in: user.registeredEvents } })
+      .populate("spaceId", "name")
+      .populate("hosts", "fullname username")
+      .populate("managers", "fullname username")
+      .populate("attendees", "fullname username")
+      .populate("checkedIn", "fullname username");
+
+    const managingSpaces = await Space.find({ _id: { $in: user.managingSpaces } })
+      .populate("admins", "fullname username")
+      .populate("followers", "fullname username")
+      .populate({
+        path: "events",
+        match: { status: { $in: ["Upcoming", "Live"] } },
+        populate: [
+          { path: "spaceId", select: "name" },
+          { path: "hosts", select: "fullname username" },
+          { path: "managers", select: "fullname username" },
+          { path: "attendees", select: "fullname username" },
+          { path: "checkedIn", select: "fullname username" },
+        ],
+      });
+    const followingSpaces = await Space.find({ _id: { $in: user.followingSpaces } })
+      .populate("admins", "fullname username")
+      .populate("followers", "fullname username")
+      .populate({
+        path: "events",
+        match: { status: { $in: ["Upcoming", "Live"] } },
+        populate: [
+          { path: "spaceId", select: "name" },
+          { path: "hosts", select: "fullname username" },
+          { path: "managers", select: "fullname username" },
+          { path: "attendees", select: "fullname username" },
+          { path: "checkedIn", select: "fullname username" },
+        ],
+      });
+
+    return {
+      name: user.fullname,
+      username: user.username,
+      avatar: user.profilePhoto,
+      notificationPreference: user.notificationPreference,
+      managingEvents,
+      registeredEvents,
+      managingSpaces,
+      followingSpaces
+    };
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    return null;
+  }
+};
+
 
 export const updateUserNotification = async (username: string, notification: boolean) => {
   try {
