@@ -10,35 +10,58 @@ import { getUserById, getUserByUsername } from "./userDBUtils";
 // To Get All the Events from the DB
 export const getAllEvents = async (username:string) => {
     try {
+        const userId = await User.findOne({ username }).select("_id");
+        
         const events = await Event.find({
             $or: [
                 { visibility: "Public" },
-                { managers: await User.findOne({ username }).select("_id") }
-            ],
-            status:{$in:["Upcoming","Live"]}
+                { managers: userId }
+            ]
         })
-        .populate('spaceId', 'name')
-        .populate('hosts', 'fullname username')
-        .populate('managers', 'fullname username')
-        .populate('attendees', 'fullname username')
-        .populate('checkedIn', 'fullname username');
-        if (events.length === 0) {
-            return [];
+        .populate("spaceId", "name icon")
+        .populate("hosts", "fullname username")
+        .populate("managers", "fullname username")
+        .populate("attendees", "fullname username")
+        .populate("checkedIn", "fullname username");
+
+        const allUpcomingEvents = events.filter(event=>{
+            return event.status == "Upcoming" || event.status == "Live";
+        });
+
+        if (!events) {
+            return null
         }
-        const eventsWithManagerFlag = events.map((event: any) => {
-            const isManager = event.managers.some((manager: any) => manager.username.toString() === username);
+        const eventsWithManagerFlag = allUpcomingEvents.map((event: any) => {
+            const isManager = event.managers.some(
+                (manager: any) => manager.username.toString() === username
+            )
             return {
                 ...event.toObject(),
                 isManager
-            };
-        });
+            }
+        })
 
-        return eventsWithManagerFlag;
+        const spaces = await Space.find()
+            .populate("admins", "fullname username")
+            .populate("followers", "fullname username")
+            .populate({
+                path: "events",
+                match: { status: { $in: ["Upcoming", "Live"] } },
+                populate: [
+                    { path: "spaceId", select: "name" },
+                    { path: "hosts", select: "fullname username" },
+                    { path: "managers", select: "fullname username" },
+                    { path: "attendees", select: "fullname username" },
+                    { path: "checkedIn", select: "fullname username" },
+                ],
+            });
+
+        return { events: eventsWithManagerFlag, spaces };
     } catch (err) {
         console.error(err);
         return null;
     }
-}
+};
 
 // To get events by its space
 export const getEventsBySpaceId = async (spaceId: string) => {

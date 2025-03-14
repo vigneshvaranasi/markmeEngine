@@ -24,14 +24,15 @@ EventRoute.get('/all', async (req, res) => {
             })
             return;
         }
-        const events = await getAllEvents(username);
-        if (!events) {
+        const allData = await getAllEvents(username);
+        if (!allData) {
             throw new Error('Events Fetch Failed');
         }
         res.status(200).send({
             payload: {
-                message: 'Got All the Events',
-                events: events
+                message: 'Got All the Events & Spaces',
+                events:allData.events,
+                spaces:allData.spaces
             },
             error: false
         })
